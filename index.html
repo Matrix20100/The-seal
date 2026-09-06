@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Seal — mutual exchange</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12151b;
+    --panel:#1b2029;
+    --panel-alt:#232a36;
+    --line:#323a48;
+    --text:#edeae2;
+    --muted:#9aa0ac;
+    --seal:#9a3324;
+    --seal-bright:#c1502f;
+    --gold:#c9a24b;
+    --good:#5e8c61;
+    --bad:#b24c3d;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(154,51,36,0.16), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{width:100%;max-width:480px;}
+  .brand{text-align:center;margin-bottom:28px;}
+  .brand .mark{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:52px;height:52px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--seal-bright), var(--seal) 65%);
+    box-shadow:0 6px 18px rgba(154,51,36,0.35), inset 0 0 0 1px rgba(255,255,255,0.08);
+    margin-bottom:14px;
+  }
+  .brand .mark svg{width:24px;height:24px;}
+  .brand h1{font-family:'Source Serif 4',serif;font-weight:600;font-size:1.7rem;margin:0 0 6px;letter-spacing:0.01em;}
+  .brand p{color:var(--muted);font-size:0.92rem;margin:0;line-height:1.5;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px 22px;margin-bottom:16px;}
+
+  .ledger{display:flex;flex-direction:column;gap:0;margin-bottom:20px;}
+  .ledger .entry{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:0.82rem;}
+  .ledger .entry:last-child{border-bottom:none;}
+  .ledger .num{font-family:'IBM Plex Mono',monospace;color:var(--muted);width:18px;flex-shrink:0;}
+  .ledger .entry.done .num{color:var(--good);}
+  .ledger .entry.active .num{color:var(--gold);}
+  .ledger .label{color:var(--muted);}
+  .ledger .entry.done .label{color:var(--text);}
+  .ledger .entry.active .label{color:var(--text);font-weight:500;}
+
+  h2.step-title{font-family:'Source Serif 4',serif;font-size:1.25rem;font-weight:600;margin:0 0 6px;}
+  p.step-sub{color:var(--muted);font-size:0.88rem;line-height:1.5;margin:0 0 20px;}
+
+  label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.01em;}
+  input[type=text], textarea{
+    width:100%;background:var(--panel-alt);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:12px 13px;font-size:0.95rem;font-family:'Inter',sans-serif;
+    margin-bottom:16px;resize:vertical;
+  }
+  input[type=text]:focus, textarea:focus{outline:none;border-color:var(--gold);}
+  textarea{min-height:90px;line-height:1.5;}
+  .code-input{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;letter-spacing:0.12em;text-transform:uppercase;text-align:center;}
+
+  button{
+    width:100%;border:none;border-radius:10px;padding:13px 16px;font-size:0.95rem;font-weight:600;
+    font-family:'Inter',sans-serif;cursor:pointer;transition:transform 0.08s ease, opacity 0.15s ease;
+  }
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.45;cursor:not-allowed;}
+  .btn-primary{background:var(--seal-bright);color:#fff;}
+  .btn-primary:hover:not(:disabled){background:var(--seal);}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--text);margin-top:10px;}
+  .btn-ghost:hover{border-color:var(--muted);}
+  .btn-danger{background:transparent;border:1px solid var(--bad);color:var(--bad);margin-top:10px;}
+
+  .code-display{
+    font-family:'IBM Plex Mono',monospace;font-size:1.7rem;letter-spacing:0.15em;text-align:center;
+    background:var(--panel-alt);border:1px dashed var(--gold);border-radius:10px;padding:16px;
+    margin-bottom:14px;color:var(--gold);
+  }
+  .hint{font-size:0.82rem;color:var(--muted);text-align:center;margin-bottom:18px;line-height:1.5;}
+
+  .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:8px;animation:pulse 1.4s infinite ease-in-out;vertical-align:middle;}
+  @keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.85);}50%{opacity:1;transform:scale(1.1);}}
+  .waiting-row{display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:var(--muted);padding:14px 0 4px;}
+
+  .term-box{background:var(--panel-alt);border:1px solid var(--line);border-radius:10px;padding:14px 15px;margin-bottom:12px;}
+  .term-box .who{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:8px;letter-spacing:0.04em;}
+  .term-box .row{display:flex;gap:8px;margin-bottom:6px;font-size:0.88rem;}
+  .term-box .row:last-child{margin-bottom:0;}
+  .term-box .row .k{color:var(--muted);flex-shrink:0;width:64px;}
+  .term-box .row .v{color:var(--text);}
+
+  .flag{display:flex;gap:10px;background:rgba(178,76,61,0.12);border:1px solid rgba(178,76,61,0.4);border-radius:10px;padding:12px 13px;margin-bottom:16px;font-size:0.85rem;line-height:1.5;color:#e3aa9f;}
+  .flag.ok{background:rgba(94,140,97,0.12);border-color:rgba(94,140,97,0.4);color:#a9c9ab;}
+
+  .preview-box{background:var(--panel-alt);border:1px solid var(--line);border-radius:10px;padding:14px 15px;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--muted);}
+  .preview-box .stat{color:var(--text);}
+
+  .reveal-box{background:var(--panel-alt);border:1px solid var(--good);border-radius:10px;padding:14px 15px;margin-bottom:14px;}
+  .reveal-box .who{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--good);margin-bottom:8px;}
+  .reveal-box .content{font-size:0.92rem;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+
+  .copy-btn{background:var(--panel-alt);border:1px solid var(--line);color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;padding:8px 12px;width:auto;display:inline-block;margin:0 0 14px;}
+
+  .center{text-align:center;}
+  .status-line{font-size:0.8rem;color:var(--muted);text-align:center;margin-top:14px;font-family:'IBM Plex Mono',monospace;}
+  .error-text{color:var(--bad);font-size:0.82rem;margin:-8px 0 14px;}
+
+  footer{text-align:center;color:var(--muted);font-size:0.75rem;margin-top:8px;line-height:1.6;padding:0 12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L4 6V12C4 16.5 7.4 20.7 12 22C16.6 20.7 20 16.5 20 12V6L12 2Z" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M9 12.2L11.2 14.5L15.5 9.8" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <h1>The Seal</h1>
+    <p>Nothing unlocks until both sides say yes —<br>and until what's exchanged matches what was promised.</p>
+  </div>
+  <div class="card" id="app"></div>
+  <footer>
+    Content is encrypted server-side before it ever touches the database — the database itself never holds plain text. Priced sides are only unlocked after a payment is independently verified on the Solana blockchain, not by trusting either party's word.
+  </footer>
+</div>
+
+<script>
+const DB_URL = 'https://exchange-app-2cdeb-default-rtdb.europe-west1.firebasedatabase.app';
+let currentCode = null;
+let currentRole = null;
+let pollTimer = null;
+let lastError = '';
+
+const app = document.getElementById('app');
+
+function genCode(){
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+function emptyParty(){
+  return {
+    joined:false, offering:'', expecting:'', termsOk:false,
+    sealed:'', preview:null, contentSubmitted:false, confirmed:false,
+    priceSol:0, payoutWallet:'', paymentReference:''
+  };
+}
+function newRoom(){
+  return { createdAt: Date.now(), status:'waiting_b', cancelledBy:null, partyA: emptyParty(), partyB: emptyParty() };
+}
+
+const B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58encode(bytes){
+  let n = 0n;
+  for(const b of bytes) n = (n << 8n) + BigInt(b);
+  let s = '';
+  while(n > 0n){ const r = n % 58n; s = B58_ALPHABET[Number(r)] + s; n = n / 58n; }
+  let leadingZeros = 0;
+  for(const b of bytes){ if(b === 0) leadingZeros++; else break; }
+  return B58_ALPHABET[0].repeat(leadingZeros) + (s || '');
+}
+function generateReference(){
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return base58encode(bytes);
+}
+function solanaPayUrl(recipient, amountSol, reference, label, message){
+  const params = new URLSearchParams();
+  params.set('amount', String(amountSol));
+  params.set('reference', reference);
+  if(label) params.set('label', label);
+  if(message) params.set('message', message);
+  return `solana:${recipient}?${params.toString()}`;
+}
+
+async function callSeal(roomCode, party, plaintext){
+  try{
+    const res = await fetch('/.netlify/functions/seal', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ roomCode, party, plaintext })
+    });
+    const json = await res.json();
+    if(!res.ok) return { error: json.error || ('HTTP ' + res.status) };
+    return json;
+  }catch(e){ return { error: e.message }; }
+}
+async function callReveal(roomCode, party){
+  try{
+    const res = await fetch('/.netlify/functions/reveal', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ roomCode, party })
+    });
+    const json = await res.json();
+    if(res.status === 402) return { paid:false };
+    if(!res.ok) return { error: json.error || ('HTTP ' + res.status) };
+    return json;
+  }catch(e){ return { error: e.message }; }
+}
+async function callAssess(roomCode, party){
+  try{
+    const res = await fetch('/.netlify/functions/assess', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ roomCode, party })
+    });
+    const json = await res.json();
+    if(!res.ok) return { error: json.error || ('HTTP ' + res.status) };
+    return json;
+  }catch(e){ return { error: e.message }; }
+}
+
+async function createRoomRemote(room){
+  // pick a code, and only claim it if nothing already lives at that path
+  for(let attempt=0; attempt<5; attempt++){
+    const code = genCode();
+    const existing = await loadRoom(code);
+    if(existing) continue; // collision, try another code
+    const ok = await saveRoom(code, room);
+    if(ok) return code;
+  }
+  throw new Error('could not allocate a room code');
+}
+let lastNetworkError = '';
+
+async function loadRoom(code){
+  try{
+    const res = await fetch(DB_URL + '/exchanges/' + code + '.json', { headers:{'Accept':'application/json'} });
+    if(!res.ok){
+      lastNetworkError = 'GET failed: HTTP ' + res.status + ' ' + res.statusText;
+      return null;
+    }
+    const data = await res.json();
+    return data; // Firebase returns null (not 404) for a path that doesn't exist
+  }catch(e){
+    lastNetworkError = 'GET threw: ' + (e && e.message ? e.message : String(e));
+    return null;
+  }
+}
+async function saveRoom(code, room){
+  try{
+    const res = await fetch(DB_URL + '/exchanges/' + code + '.json', {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(room)
+    });
+    if(!res.ok){
+      lastNetworkError = 'PUT failed: HTTP ' + res.status + ' ' + res.statusText;
+      return false;
+    }
+    return true;
+  }catch(e){
+    lastNetworkError = 'PUT threw: ' + (e && e.message ? e.message : String(e));
+    return false;
+  }
+}
+
+function wordOverlapWarning(iExpect, otherOffers){
+  if(!iExpect.trim() || !otherOffers.trim()) return true;
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>2);
+  const a = new Set(norm(iExpect));
+  const b = new Set(norm(otherOffers));
+  if(a.size===0 || b.size===0) return true;
+  let hits = 0;
+  a.forEach(w=>{ if(b.has(w)) hits++; });
+  return hits === 0;
+}
+function esc(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+let lastSeenRoomJSON = null;
+function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(async ()=>{
+    if(!currentCode) return;
+    const room = await loadRoom(currentCode);
+    if(!room) return;
+    const asJSON = JSON.stringify(room);
+    if(asJSON === lastSeenRoomJSON) return; // nothing actually changed — don't touch the DOM
+    // don't clobber a field the user is actively typing in with a no-op or stale redraw
+    const active = document.activeElement;
+    if(active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT') && active.value.trim().length > 0){
+      return; // wait until they blur or submit before redrawing
+    }
+    lastSeenRoomJSON = asJSON;
+    render(room);
+  }, 3000);
+}
+
+const STEP_LABELS = ['Open a room','Both parties join','Declare terms','Submit the goods','Confirm & release'];
+function ledger(stepsDone, activeIndex, labels){
+  let html = '<div class="ledger">';
+  labels.forEach((label,i)=>{
+    let cls = '';
+    if(i < activeIndex) cls = 'done';
+    else if(i === activeIndex) cls = 'active';
+    html += `<div class="entry ${cls}"><span class="num">${i+1<10?'0':''}${i+1}</span><span class="label">${label}</span></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderLanding(){
+  app.innerHTML = `
+    <h2 class="step-title">Start an exchange</h2>
+    <p class="step-sub">Create a new exchange and share the code with the other person, or join one they've already started.</p>
+    <button class="btn-primary" id="btn-create">Create an exchange</button>
+    <div style="height:14px"></div>
+    <label for="join-code">Have a code?</label>
+    <input type="text" id="join-code" class="code-input" maxlength="6" placeholder="XXXXXX">
+    <button class="btn-ghost" id="btn-join">Join with this code</button>
+    ${lastError ? `<div class="error-text center">${esc(lastError)}</div>` : ''}
+  `;
+  lastError = '';
+  document.getElementById('btn-create').onclick = createRoom;
+  document.getElementById('btn-join').onclick = ()=>{
+    const code = document.getElementById('join-code').value.trim().toUpperCase();
+    if(code.length < 6){ lastError = 'Enter the full 6-character code the other person shared with you.'; renderLanding(); return; }
+    joinRoom(code);
+  };
+}
+
+async function createRoom(){
+  app.innerHTML = `<div class="waiting-row"><span class="pulse"></span>Opening a room…</div>`;
+  try{
+    const room = newRoom();
+    room.partyA.joined = true;
+    const id = await createRoomRemote(room);
+    currentCode = id;
+    currentRole = 'A';
+    startPolling();
+    render(room);
+  }catch(e){
+    lastError = "Couldn't reach the exchange server. Details: " + (lastNetworkError || (e && e.message) || 'unknown error');
+    renderLanding();
+  }
+}
+async function joinRoom(code){
+  const room = await loadRoom(code);
+  if(!room){ lastError = "That code doesn't match an open exchange."; renderLanding(); return; }
+  if(room.partyB.joined){ lastError = 'That exchange already has two parties.'; renderLanding(); return; }
+  room.partyB.joined = true;
+  room.status = 'terms';
+  const ok = await saveRoom(code, room);
+  if(!ok){ lastError = "Couldn't join right now. Try again."; renderLanding(); return; }
+  currentCode = code;
+  currentRole = 'B';
+  startPolling();
+  render(room);
+}
+
+function renderWaitingForB(room){
+  app.innerHTML = `
+    ${ledger(0,1,STEP_LABELS)}
+    <h2 class="step-title">Share this code</h2>
+    <p class="step-sub">Send it to the person you're trading with. Nothing moves until they join.</p>
+    <div class="code-display">${currentCode}</div>
+    <button class="copy-btn" id="btn-copy">Copy code</button>
+    <div class="waiting-row"><span class="pulse"></span>Waiting for the other party to join…</div>
+    <button class="btn-danger" id="btn-cancel">Cancel exchange</button>
+  `;
+  document.getElementById('btn-copy').onclick = ()=>{
+    navigator.clipboard?.writeText(currentCode);
+    const b = document.getElementById('btn-copy');
+    b.textContent = 'Copied';
+    setTimeout(()=>{ b.textContent = 'Copy code'; }, 1400);
+  };
+  document.getElementById('btn-cancel').onclick = ()=>cancelRoom('A');
+}
+
+function renderTerms(room){
+  const me = currentRole === 'A' ? room.partyA : room.partyB;
+  const other = currentRole === 'A' ? room.partyB : room.partyA;
+  const myTermsSubmitted = me.offering.trim() && me.expecting.trim();
+
+  if(!myTermsSubmitted){
+    app.innerHTML = `
+      ${ledger(0,2,STEP_LABELS)}
+      <h2 class="step-title">Declare your terms</h2>
+      <p class="step-sub">Say what you're offering and what you expect in return. Both sides see this before anything real is uploaded.</p>
+      <label for="offering">What I'm giving</label>
+      <textarea id="offering" placeholder="e.g. the answer key to problem set 4"></textarea>
+      <label for="expecting">What I expect to receive</label>
+      <textarea id="expecting" placeholder="e.g. their notes from Tuesday's lecture"></textarea>
+      <button class="btn-primary" id="btn-submit-terms">Lock in my terms</button>
+      <div class="status-line">${other.offering ? 'The other party has already declared their terms.' : 'Waiting on the other party too.'}</div>
+    `;
+    document.getElementById('btn-submit-terms').onclick = async ()=>{
+      const offering = document.getElementById('offering').value.trim();
+      const expecting = document.getElementById('expecting').value.trim();
+      if(!offering || !expecting) return;
+      const fresh = await loadRoom(currentCode);
+      if(!fresh) return;
+      const p = currentRole === 'A' ? fresh.partyA : fresh.partyB;
+      p.offering = offering;
+      p.expecting = expecting;
+      await saveRoom(currentCode, fresh);
+      render(fresh);
+    };
+    return;
+  }
+
+  if(!other.offering.trim()){
+    app.innerHTML = `
+      ${ledger(0,2,STEP_LABELS)}
+      <h2 class="step-title">Terms locked in</h2>
+      <p class="step-sub">Waiting for the other party to declare theirs.</p>
+      <div class="term-box"><div class="who">YOU OFFER</div><div class="row"><span class="v">${esc(me.offering)}</span></div></div>
+      <div class="term-box"><div class="who">YOU EXPECT</div><div class="row"><span class="v">${esc(me.expecting)}</span></div></div>
+      <div class="waiting-row"><span class="pulse"></span>Waiting on the other party…</div>
+      <button class="btn-danger" id="btn-cancel">Cancel exchange</button>
+    `;
+    document.getElementById('btn-cancel').onclick = ()=>cancelRoom(currentRole);
+    return;
+  }
+
+  const mismatchAB = wordOverlapWarning(me.expecting, other.offering);
+  const mismatchBA = wordOverlapWarning(other.expecting, me.offering);
+  const anyMismatch = mismatchAB || mismatchBA;
+
+  app.innerHTML = `
+    ${ledger(0,2,STEP_LABELS)}
+    <h2 class="step-title">Check the terms match</h2>
+    <p class="step-sub">Read both sides carefully. This is your chance to catch a mismatch before anything real is uploaded.</p>
+    <div class="term-box"><div class="who">YOU</div>
+      <div class="row"><span class="k">Give</span><span class="v">${esc(me.offering)}</span></div>
+      <div class="row"><span class="k">Expect</span><span class="v">${esc(me.expecting)}</span></div>
+    </div>
+    <div class="term-box"><div class="who">THEM</div>
+      <div class="row"><span class="k">Give</span><span class="v">${esc(other.offering)}</span></div>
+      <div class="row"><span class="k">Expect</span><span class="v">${esc(other.expecting)}</span></div>
+    </div>
+    <div class="flag ${anyMismatch ? '' : 'ok'}">
+      ${anyMismatch ? "⚠ These descriptions don't share any obvious wording. That's not proof of a problem, but read closely before continuing." : "✓ What each side expects lines up with what the other is offering, on the surface."}
+    </div>
+    <button class="btn-primary" id="btn-confirm-terms" ${me.termsOk ? 'disabled' : ''}>${me.termsOk ? 'Waiting on the other party…' : 'This matches — continue'}</button>
+    <button class="btn-danger" id="btn-cancel">This is wrong — cancel</button>
+  `;
+  if(!me.termsOk){
+    document.getElementById('btn-confirm-terms').onclick = async ()=>{
+      const fresh = await loadRoom(currentCode);
+      if(!fresh) return;
+      const p = currentRole === 'A' ? fresh.partyA : fresh.partyB;
+      p.termsOk = true;
+      if(fresh.partyA.termsOk && fresh.partyB.termsOk) fresh.status = 'content';
+      await saveRoom(currentCode, fresh);
+      render(fresh);
+    };
+  }
+  document.getElementById('btn-cancel').onclick = ()=>cancelRoom(currentRole);
+}
+
+function renderContent(room){
+  const me = currentRole === 'A' ? room.partyA : room.partyB;
+  const other = currentRole === 'A' ? room.partyB : room.partyA;
+
+  if(!me.contentSubmitted){
+    app.innerHTML = `
+      ${ledger(0,3,STEP_LABELS)}
+      <h2 class="step-title">Submit the real thing</h2>
+      <p class="step-sub">This is encrypted the moment you submit it. Neither of you — and nothing reading the database directly — can see it as plain text.</p>
+      <label for="the-content">What you're giving: "${esc(me.offering)}"</label>
+      <textarea id="the-content" placeholder="Paste the actual content here"></textarea>
+      <label for="price-sol">Price in SOL to unlock (optional — leave blank if this side is free)</label>
+      <input type="text" id="price-sol" class="code-input" style="text-transform:none;letter-spacing:normal;font-size:0.95rem;" placeholder="e.g. 0.5">
+      <label for="payout-wallet">Your Solana wallet address (required only if you set a price)</label>
+      <input type="text" id="payout-wallet" style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;" placeholder="Paste your Phantom wallet address">
+      <button class="btn-primary" id="btn-submit-content">Seal it</button>
+      <div class="status-line">${other.contentSubmitted ? 'The other party has already sealed theirs.' : 'Waiting on the other party too.'}</div>
+      <div id="seal-error" class="error-text center" style="display:none;"></div>
+    `;
+    document.getElementById('btn-submit-content').onclick = async ()=>{
+      const val = document.getElementById('the-content').value;
+      const priceStr = document.getElementById('price-sol').value.trim();
+      const wallet = document.getElementById('payout-wallet').value.trim();
+      const errEl = document.getElementById('seal-error');
+      errEl.style.display = 'none';
+      if(!val.trim()) return;
+      const price = priceStr ? parseFloat(priceStr) : 0;
+      if(priceStr && (isNaN(price) || price <= 0)){
+        errEl.textContent = 'Price must be a positive number, or leave it blank.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if(price > 0 && !wallet){
+        errEl.textContent = 'Add your Solana wallet address to charge for this.';
+        errEl.style.display = 'block';
+        return;
+      }
+      const btn = document.getElementById('btn-submit-content');
+      btn.disabled = true; btn.textContent = 'Sealing…';
+      const sealResult = await callSeal(currentCode, currentRole, val);
+      if(sealResult.error){
+        errEl.textContent = 'Could not seal your content: ' + sealResult.error;
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Seal it';
+        return;
+      }
+      const fresh = await loadRoom(currentCode);
+      if(!fresh) return;
+      const p = currentRole === 'A' ? fresh.partyA : fresh.partyB;
+      p.sealed = sealResult.sealed;
+      p.preview = sealResult.preview;
+      p.contentSubmitted = true;
+      if(price > 0){
+        p.priceSol = price;
+        p.payoutWallet = wallet;
+        p.paymentReference = generateReference();
+      }
+      if(fresh.partyA.contentSubmitted && fresh.partyB.contentSubmitted) fresh.status = 'preview';
+      await saveRoom(currentCode, fresh);
+      render(fresh);
+    };
+    return;
+  }
+
+  app.innerHTML = `
+    ${ledger(0,3,STEP_LABELS)}
+    <h2 class="step-title">Sealed</h2>
+    <p class="step-sub">Your side is in, encrypted. Waiting for the other party to seal theirs.</p>
+    <div class="waiting-row"><span class="pulse"></span>Waiting on the other party…</div>
+    <button class="btn-danger" id="btn-cancel">Cancel exchange</button>
+  `;
+  document.getElementById('btn-cancel').onclick = ()=>cancelRoom(currentRole);
+}
+
+function wireAssessButton(otherLabel){
+  const btn = document.getElementById('btn-assess');
+  const box = document.getElementById('assess-box');
+  if(!btn) return;
+  btn.onclick = async ()=>{
+    btn.disabled = true;
+    btn.textContent = 'Reading it over…';
+    box.style.display = 'block';
+    box.className = 'flag';
+    box.textContent = 'Asking the model to compare the sealed content against what was promised — it never shows the content itself, only its judgment.';
+    const result = await callAssess(currentCode, otherLabel);
+    btn.disabled = false;
+    btn.textContent = 'Ask AI to check this matches the promise';
+    if(result.error){
+      box.className = 'flag';
+      box.textContent = 'Could not get an assessment: ' + result.error;
+      return;
+    }
+    box.className = 'flag ok';
+    box.textContent = result.assessment;
+  };
+}
+
+function renderPreview(room){
+  const me = currentRole === 'A' ? room.partyA : room.partyB;
+  const other = currentRole === 'A' ? room.partyB : room.partyA;
+  const otherLabel = currentRole === 'A' ? 'B' : 'A';
+  const preview = other.preview || { chars: 0, words: 0, firstBit: '' };
+  const priced = (other.priceSol || 0) > 0;
+
+  if(priced && !me.confirmed){
+    const url = solanaPayUrl(other.payoutWallet, other.priceSol, other.paymentReference, 'The Seal exchange', `Unlock: ${other.offering}`);
+    app.innerHTML = `
+      ${ledger(0,4,STEP_LABELS)}
+      <h2 class="step-title">Pay to unlock</h2>
+      <p class="step-sub">This side is priced. Payment is verified directly on the Solana blockchain — nothing here just takes their word for it.</p>
+      <div class="preview-box">
+        They promised: <span class="stat">${esc(other.offering)}</span><br>
+        Length: <span class="stat">${preview.chars} characters, ~${preview.words} word${preview.words===1?'':'s'}</span><br>
+        Price: <span class="stat">${other.priceSol} SOL</span> to <span class="stat">${esc(other.payoutWallet)}</span>
+      </div>
+      <a href="${url}" style="text-decoration:none;"><button class="btn-primary" type="button">Open in Phantom — pay ${other.priceSol} SOL</button></a>
+      <button class="btn-ghost" id="btn-check-payment">I've paid — check now</button>
+      <div id="pay-status" class="status-line"></div>
+      <button class="btn-ghost" id="btn-assess">Ask AI to check this matches the promise</button>
+      <div id="assess-box" class="flag" style="display:none;"></div>
+      <button class="btn-danger" id="btn-cancel">Cancel exchange</button>
+    `;
+    wireAssessButton(otherLabel);
+    document.getElementById('btn-check-payment').onclick = async ()=>{
+      const statusEl = document.getElementById('pay-status');
+      statusEl.textContent = 'Checking the blockchain…';
+      const result = await callReveal(currentCode, otherLabel);
+      if(result.error){
+        statusEl.textContent = 'Could not check payment: ' + result.error;
+        return;
+      }
+      if(!result.paid){
+        statusEl.textContent = "Payment not found yet — Solana confirmations can take a few seconds. Try again shortly.";
+        return;
+      }
+      const fresh = await loadRoom(currentCode);
+      if(!fresh) return;
+      const p = currentRole === 'A' ? fresh.partyA : fresh.partyB;
+      p.confirmed = true;
+      if(fresh.partyA.confirmed && fresh.partyB.confirmed) fresh.status = 'released';
+      await saveRoom(currentCode, fresh);
+      render(fresh);
+    };
+    document.getElementById('btn-cancel').onclick = ()=>cancelRoom(currentRole);
+    return;
+  }
+
+  app.innerHTML = `
+    ${ledger(0,4,STEP_LABELS)}
+    <h2 class="step-title">Last look before release</h2>
+    <p class="step-sub">You'll see a fingerprint of what they sent — not the full content — so you can sanity-check it before unlocking.</p>
+    <div class="preview-box">
+      They promised: <span class="stat">${esc(other.offering)}</span><br>
+      Length: <span class="stat">${preview.chars} characters, ~${preview.words} word${preview.words===1?'':'s'}</span><br>
+      Starts with: <span class="stat">"${esc(preview.firstBit)}…"</span>
+    </div>
+    <button class="btn-primary" id="btn-release" ${me.confirmed ? 'disabled' : ''}>${me.confirmed ? 'Waiting on the other party…' : 'Confirm & release'}</button>
+    <button class="btn-ghost" id="btn-assess">Ask AI to check this matches the promise</button>
+    <div id="assess-box" class="flag" style="display:none;"></div>
+    <button class="btn-danger" id="btn-cancel">This doesn't look right — cancel</button>
+  `;
+  wireAssessButton(otherLabel);
+  if(!me.confirmed){
+    document.getElementById('btn-release').onclick = async ()=>{
+      const fresh = await loadRoom(currentCode);
+      if(!fresh) return;
+      const p = currentRole === 'A' ? fresh.partyA : fresh.partyB;
+      p.confirmed = true;
+      if(fresh.partyA.confirmed && fresh.partyB.confirmed) fresh.status = 'released';
+      await saveRoom(currentCode, fresh);
+      render(fresh);
+    };
+  }
+  document.getElementById('btn-cancel').onclick = ()=>cancelRoom(currentRole);
+}
+
+async function renderReleased(room){
+  stopPolling();
+  app.innerHTML = `
+    ${ledger(5,5,STEP_LABELS)}
+    <h2 class="step-title">Released</h2>
+    <p class="step-sub">Both sides confirmed. Decrypting…</p>
+    <div class="waiting-row"><span class="pulse"></span>Fetching content…</div>
+  `;
+  const [meResult, otherResult] = await Promise.all([
+    callReveal(currentCode, currentRole),
+    callReveal(currentCode, currentRole === 'A' ? 'B' : 'A')
+  ]);
+  const meContent = meResult.content !== undefined ? meResult.content : ('[could not decrypt: ' + (meResult.error || 'unknown error') + ']');
+  const otherContent = otherResult.content !== undefined ? otherResult.content : ('[could not decrypt: ' + (otherResult.error || 'unknown error') + ']');
+  app.innerHTML = `
+    ${ledger(5,5,STEP_LABELS)}
+    <h2 class="step-title">Released</h2>
+    <p class="step-sub">Both sides confirmed. Here's what came through.</p>
+    <div class="reveal-box"><div class="who">FROM THEM</div><div class="content">${esc(otherContent)}</div></div>
+    <div class="reveal-box"><div class="who">FROM YOU</div><div class="content">${esc(meContent)}</div></div>
+    <button class="btn-ghost" id="btn-new">Start a new exchange</button>
+  `;
+  document.getElementById('btn-new').onclick = resetToLanding;
+}
+
+function renderCancelled(room){
+  stopPolling();
+  const byMe = room.cancelledBy === currentRole;
+  app.innerHTML = `
+    <h2 class="step-title">Exchange cancelled</h2>
+    <p class="step-sub">${byMe ? "You cancelled this exchange. Nothing was released to either side." : "The other party cancelled this exchange. Nothing was released to either side."}</p>
+    <button class="btn-ghost" id="btn-new">Start a new exchange</button>
+  `;
+  document.getElementById('btn-new').onclick = resetToLanding;
+}
+
+async function cancelRoom(who){
+  const fresh = await loadRoom(currentCode);
+  if(!fresh) return;
+  fresh.status = 'cancelled';
+  fresh.cancelledBy = who;
+  await saveRoom(currentCode, fresh);
+  render(fresh);
+}
+
+function resetToLanding(){
+  stopPolling();
+  currentCode = null;
+  currentRole = null;
+  lastSeenRoomJSON = null;
+  renderLanding();
+}
+
+function render(room){
+  if(room) lastSeenRoomJSON = JSON.stringify(room);
+  if(!room){ renderLanding(); return; }
+  if(room.status === 'cancelled'){ renderCancelled(room); return; }
+  if(room.status === 'released'){ renderReleased(room); return; }
+  if(room.status === 'waiting_b'){
+    if(currentRole === 'A' && !room.partyB.joined){ renderWaitingForB(room); return; }
+  }
+  if(room.status === 'terms' || (room.status === 'waiting_b' && room.partyB.joined)){
+    if(room.status === 'waiting_b') room.status = 'terms';
+    renderTerms(room);
+    return;
+  }
+  if(room.status === 'content'){ renderContent(room); return; }
+  if(room.status === 'preview'){ renderPreview(room); return; }
+  renderTerms(room);
+}
+
+renderLanding();
+</script>
+</body>
+</html>
